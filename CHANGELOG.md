@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 - 2026-06-28
+
+- Pin installer downloads to one release so raw GitHub caching cannot mix files
+  from different commits.
+- Cache-bust explicitly requested mutable versions such as `main`.
+
 ## 0.2.1 - 2026-06-28
 
 - Show the selected profile name in Claude's session header, terminal title,

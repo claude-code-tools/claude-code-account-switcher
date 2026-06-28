@@ -32,13 +32,13 @@ brew install fzf jq
 Review the installer before running it:
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/main/install.zsh
+curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.2/install.zsh
 ```
 
 Then install:
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/main/install.zsh | zsh
+curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.2/install.zsh | zsh
 ```
 
 The installer:
@@ -129,7 +129,7 @@ New accounts show `usage pending` until their first normal Claude response. Cach
 Run the installer again. Account metadata and Keychain entries are preserved.
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/main/install.zsh | zsh
+curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.2/install.zsh | zsh
 ```
 
 ## Uninstall

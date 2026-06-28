@@ -4,7 +4,9 @@ emulate -L zsh
 set -euo pipefail
 
 readonly REPOSITORY="leegunwoo98/claude-code-account-switcher"
-readonly VERSION="${CLAUDE_ACCOUNTS_VERSION:-main}"
+readonly DEFAULT_VERSION="v0.2.2"
+readonly VERSION="${CLAUDE_ACCOUNTS_VERSION:-$DEFAULT_VERSION}"
+readonly CACHE_BUSTER="$(date +%s)-$$"
 readonly INSTALL_ROOT="${CLAUDE_ACCOUNTS_INSTALL_ROOT:-$HOME/.local/share/claude-code-account-switcher}"
 readonly CONFIG_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/claude-subscriptions"
 readonly ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
@@ -42,7 +44,7 @@ fetch_file() {
     cp "$SCRIPT_DIR/$relative_path" "$destination"
   else
     curl -fsSL \
-      "https://raw.githubusercontent.com/$REPOSITORY/$VERSION/$relative_path" \
+      "https://raw.githubusercontent.com/$REPOSITORY/$VERSION/$relative_path?cachebust=$CACHE_BUSTER" \
       -o "$destination"
   fi
 }
@@ -128,7 +130,7 @@ fi
 CLAUDE_ACCOUNTS_BIN_DIR="$BIN_DIR" CLAUDE_ACCOUNTS_STANDALONE=1 \
   zsh -fc "source ${(q)INSTALL_ROOT}/claude-accounts.zsh"
 
-print -r -- "Installed Claude Code Account Switcher."
+print -r -- "Installed Claude Code Account Switcher ${VERSION}."
 print -r -- "Open the UI immediately with:"
 print -r -- "  claude-accounts"
 
