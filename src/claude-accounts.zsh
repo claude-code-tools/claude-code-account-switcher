@@ -330,6 +330,7 @@ _claude_with_subscription() {
     config_dir_args=(CLAUDE_CONFIG_DIR="$REPLY")
   fi
 
+  _claude_subscription_usage_note "$slug"
   print -u2 -r -- "Starting Claude with subscription: ${label}"
 
   /usr/bin/env \
@@ -683,7 +684,119 @@ _claude_account_action_pick() {
   done
 }
 
+# Print a one-line note to stderr if a subscription was near its 5-hour cap at
+# its last launch and that window has not reset yet. Best-effort, never blocks.
+_claude_subscription_usage_note() {
+  local slug="$1"
+  local usage_file="$CLAUDE_SUBSCRIPTIONS_USAGE_DIR/${slug}.json"
+  local pct resets now
+  [[ -r "$usage_file" ]] && (( ${+commands[jq]} )) || return 0
+  pct="$(jq -r '.rate_limits.five_hour.used_percentage // empty' "$usage_file" 2>/dev/null)"
+  resets="$(jq -r '.rate_limits.five_hour.resets_at // 0' "$usage_file" 2>/dev/null)"
+  [[ -n "$pct" ]] || return 0
+  now="$(date +%s)"
+  (( resets > now )) || return 0
+  (( $(printf '%.0f' "$pct") >= 85 )) || return 0
+  print -u2 -r -- "Note: this subscription was at $(printf '%.0f' "$pct")% of its 5-hour limit a moment ago."
+}
+
+# Diagnose the configured subscriptions: token presence, config-isolation
+# availability, cached usage, and — most usefully — whether two accounts
+# resolve to the SAME subscription (identical token, or identical usage
+# fingerprint), which is the failure mode where a token was generated under the
+# wrong account. Uses only local data; launch an account to refresh its usage.
+_claude_subscription_doctor() {
+  local slug label service token hash usage_file fingerprint warning
+  local -A token_owner usage_owner
+  local -a warnings=()
+  local isolation
+
+  if (( ${#_CLAUDE_SUBSCRIPTION_SLUGS[@]} == 0 )); then
+    print -r -- "No Claude subscriptions configured. Run: claude-accounts"
+    return 0
+  fi
+
+  if (( ${+commands[jq]} || ${+commands[python3]} )); then
+    isolation="available"
+  else
+    isolation="UNAVAILABLE — install jq (brew install jq)"
+    warnings+=("Account isolation needs jq or python3; without it every session bills the logged-in account.")
+  fi
+
+  print -r -- "Claude subscription doctor"
+  print -r -- "  per-account config isolation: ${isolation}"
+  print -r -- ""
+
+  for slug in "${_CLAUDE_SUBSCRIPTION_SLUGS[@]}"; do
+    label="${_CLAUDE_SUBSCRIPTION_LABELS[$slug]}"
+    service="${_CLAUDE_SUBSCRIPTION_SERVICES[$slug]}"
+    print -r -- "● ${label}  (claude-${slug})"
+
+    token="$(/usr/bin/security find-generic-password -a "$USER" -s "$service" -w 2>/dev/null || true)"
+    if [[ -z "$token" ]]; then
+      print -r -- "    token : MISSING — refresh it from claude-accounts"
+      warnings+=("${label}: no Keychain token")
+      print -r -- ""
+      continue
+    fi
+    if [[ "$token" == sk-ant-oat* ]]; then
+      print -r -- "    token : present (setup-token)"
+    else
+      print -r -- "    token : present, but unexpected prefix"
+      warnings+=("${label}: token does not look like a setup-token")
+    fi
+
+    hash="$(printf '%s' "$token" | shasum -a 256 2>/dev/null | cut -d' ' -f1)"
+    token=""; unset token
+    if [[ -n "$hash" ]]; then
+      if [[ -n "${token_owner[$hash]-}" ]]; then
+        print -r -- "    ⚠ identical token to '${token_owner[$hash]}' (same account billed for both)"
+        warnings+=("${label} and ${token_owner[$hash]} share one token")
+      else
+        token_owner[$hash]="$label"
+      fi
+    fi
+
+    _claude_subscription_usage_summary "$slug"
+    print -r -- "    usage : $REPLY"
+
+    fingerprint=""
+    usage_file="$CLAUDE_SUBSCRIPTIONS_USAGE_DIR/${slug}.json"
+    if [[ -r "$usage_file" ]] && (( ${+commands[jq]} )); then
+      fingerprint="$(jq -rc '[.rate_limits.five_hour.used_percentage,.rate_limits.five_hour.resets_at,.rate_limits.seven_day.used_percentage,.rate_limits.seven_day.resets_at]|@csv' "$usage_file" 2>/dev/null)"
+      [[ "$fingerprint" == *[0-9]* ]] || fingerprint=""
+    fi
+    if [[ -n "$fingerprint" ]]; then
+      if [[ -n "${usage_owner[$fingerprint]-}" ]]; then
+        print -r -- "    ⚠ identical usage to '${usage_owner[$fingerprint]}' — likely the SAME subscription"
+        warnings+=("${label} and ${usage_owner[$fingerprint]} report identical usage; one token was probably generated under the wrong account. Regenerate it with the intended account signed in on claude.ai.")
+      else
+        usage_owner[$fingerprint]="$label"
+      fi
+    fi
+    print -r -- ""
+  done
+
+  if (( ${#warnings[@]} )); then
+    print -r -- "Findings:"
+    for warning in "${warnings[@]}"; do
+      print -r -- "  ⚠ ${warning}"
+    done
+  else
+    print -r -- "✓ No problems detected."
+  fi
+  print -r -- ""
+  print -r -- "Usage reflects each account's last launch — launch one, then re-run"
+  print -r -- "'claude-accounts doctor'. Two accounts with identical usage are billing"
+  print -r -- "the same subscription."
+}
+
 claude-accounts() {
+  if [[ "${1:-}" == "doctor" ]]; then
+    _claude_subscription_doctor
+    return $?
+  fi
+
   local slug label action
 
   while true; do

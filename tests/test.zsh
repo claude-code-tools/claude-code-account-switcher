@@ -99,4 +99,10 @@ else
   print -r -- "note: account isolation unavailable (no jq/python3); skipping isolation assertions"
 fi
 
+# doctor reports on configured accounts and exits cleanly.
+doctor_out="$(claude-accounts doctor 2>&1)"; doctor_ec=$?
+(( doctor_ec == 0 )) || fail "doctor exited ${doctor_ec}"
+[[ "$doctor_out" == *"subscription doctor"* ]] || fail "doctor header missing"
+[[ "$doctor_out" == *"Gmail Work"* ]] || fail "doctor did not list the configured account"
+
 print -r -- "runtime tests passed"

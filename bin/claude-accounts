@@ -18,10 +18,13 @@ source "$runtime_root/claude-accounts.zsh"
 invocation="${0:t}"
 if [[ "$invocation" == "claude-accounts" ]]; then
   if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-    print -r -- "usage: claude-accounts"
+    print -r -- "usage: claude-accounts [doctor]"
     print -r -- ""
     print -r -- "Manage and launch Keychain-backed Claude Code subscription profiles."
     print -r -- "Configured profiles also create direct claude-<suffix> commands."
+    print -r -- ""
+    print -r -- "  doctor   check each account's token, isolation, and whether any two"
+    print -r -- "           accounts resolve to the same subscription"
     exit 0
   fi
   claude-accounts "$@"

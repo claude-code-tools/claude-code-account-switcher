@@ -12,6 +12,12 @@
   `python3`; without either, the session launches unisolated with a warning.
 - Show the pinned account name on the status line for the whole session, so an
   in-session `/login` can't silently mislead which subscription is active.
+- Add `claude-accounts doctor`: checks each account's Keychain token and config
+  isolation, and flags when two accounts resolve to the same subscription
+  (identical token or identical usage fingerprint) — the symptom of a token
+  generated under the wrong account.
+- Note on launch when a subscription was near its 5-hour limit at its last
+  launch and that window has not reset yet.
 - Keep the test suite hermetic against leaked `CLAUDE_ACCOUNTS_*` environment
   variables so a developer's shell can't make the installer test escape its
   sandbox.
