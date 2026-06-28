@@ -342,7 +342,7 @@ _claude_subscription_save_new() {
 
 _claude_subscription_add() {
   local slug="${1:-}"
-  local label service token claude_bin exit_code identity
+  local label service token claude_bin exit_code identity email
 
   if [[ -n "$slug" && -n "${_CLAUDE_SUBSCRIPTION_LABELS[$slug]-}" ]]; then
     label="${_CLAUDE_SUBSCRIPTION_LABELS[$slug]}"
@@ -360,6 +360,35 @@ _claude_subscription_add() {
   fi
 
   claude_bin="${commands[claude]:-$HOME/.local/bin/claude}"
+  read "email?Claude account email (used for login only; leave blank to skip): "
+  if [[ -n "$email" ]]; then
+    if [[ "$email" == *$'\t'* || "$email" == *$'\n'* ]]; then
+      print -u2 -r -- "Account email cannot contain tabs or newlines."
+      return 1
+    fi
+
+    print -r -- "Signing into Claude as ${email} before generating the token."
+    print -r -- "Complete the browser login, then return here."
+    /usr/bin/env \
+      -u ANTHROPIC_API_KEY \
+      -u ANTHROPIC_AUTH_TOKEN \
+      -u ANTHROPIC_BASE_URL \
+      -u CLAUDE_CODE_OAUTH_TOKEN \
+      -u CLAUDE_CODE_USE_BEDROCK \
+      -u CLAUDE_CODE_USE_VERTEX \
+      -u CLAUDE_CODE_USE_FOUNDRY \
+      "$claude_bin" auth logout >/dev/null 2>&1 || true
+    /usr/bin/env \
+      -u ANTHROPIC_API_KEY \
+      -u ANTHROPIC_AUTH_TOKEN \
+      -u ANTHROPIC_BASE_URL \
+      -u CLAUDE_CODE_OAUTH_TOKEN \
+      -u CLAUDE_CODE_USE_BEDROCK \
+      -u CLAUDE_CODE_USE_VERTEX \
+      -u CLAUDE_CODE_USE_FOUNDRY \
+      "$claude_bin" auth login --claudeai --email "$email" || return 1
+  fi
+
   print -r -- "Generating a one-year OAuth token for ${label}."
   print -r -- "Confirm the intended Claude account in the browser, then copy the generated token."
 
@@ -401,6 +430,8 @@ _claude_subscription_add() {
 
   token=""
   unset token
+
+  rm -f "$CLAUDE_SUBSCRIPTIONS_USAGE_DIR/${slug}.json"
 
   if [[ -z "${_CLAUDE_SUBSCRIPTION_LABELS[$slug]-}" ]]; then
     _claude_subscription_save_new "$slug" "$label" "$service" || return 1

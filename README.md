@@ -32,13 +32,13 @@ brew install fzf jq
 Review the installer before running it:
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.2/install.zsh
+curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.3/install.zsh
 ```
 
 Then install:
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.2/install.zsh | zsh
+curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.3/install.zsh | zsh
 ```
 
 The installer:
@@ -71,6 +71,13 @@ From the UI you can:
 - Edit its display name or direct command
 - Replace its token
 - Remove it
+
+During Add or Refresh, the switcher can first run `claude auth login --email`
+for the intended account. This prevents `setup-token` from silently reusing a
+different Claude browser/CLI identity. The email is passed to Claude only as a
+login hint and is not stored by the switcher. Replacing a token also clears that
+profile's cached usage so stale values are not shown as belonging to the new
+token.
 
 When adding an account, choose a display name and command suffix. If the suffix is `gmail`, the generated command is:
 
@@ -129,7 +136,7 @@ New accounts show `usage pending` until their first normal Claude response. Cach
 Run the installer again. Account metadata and Keychain entries are preserved.
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.2/install.zsh | zsh
+curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.3/install.zsh | zsh
 ```
 
 ## Uninstall
@@ -152,6 +159,9 @@ To also remove the registry, usage cache, and each registered Keychain token:
 - Usage values are cached and only update after a normal API response.
 - Long-lived setup tokens cannot establish Claude Remote Control sessions.
 - Claude Code does not currently provide a supported multi-profile `/login` interface.
+- Inference-only setup tokens do not expose their account email through Claude's
+  OAuth profile endpoint. Account identity must be established during browser
+  authorization.
 
 ## License
 

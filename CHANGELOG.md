@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3 - 2026-06-28
+
+- Optionally force a full Claude login for a specific email before generating or
+  refreshing a setup token.
+- Clear cached usage whenever a profile token is replaced.
+
 ## 0.2.2 - 2026-06-28
 
 - Pin installer downloads to one release so raw GitHub caching cannot mix files
