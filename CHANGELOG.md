@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.4 - 2026-06-28
+
+- Remove the optional per-email `claude auth login` step from token generation.
+  It wrote global subscription credentials that the injected
+  `CLAUDE_CODE_OAUTH_TOKEN` always overrides, so it had no effect on which
+  account a session used, and its unconditional `auth logout` could destroy the
+  active Claude CLI session if the login failed. `claude setup-token` already
+  binds the token to whichever account is signed in on claude.ai; the prompt now
+  says so.
+- Clear cached usage only after a new profile is registered, so a failed save no
+  longer discards usage for an account that was never added.
+
 ## 0.2.3 - 2026-06-28
 
 - Optionally force a full Claude login for a specific email before generating or
