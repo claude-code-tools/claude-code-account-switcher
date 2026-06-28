@@ -4,7 +4,7 @@ emulate -L zsh
 set -euo pipefail
 
 readonly REPOSITORY="leegunwoo98/claude-code-account-switcher"
-readonly DEFAULT_VERSION="v0.2.4"
+readonly DEFAULT_VERSION="v0.3.0"
 readonly VERSION="${CLAUDE_ACCOUNTS_VERSION:-$DEFAULT_VERSION}"
 readonly CACHE_BUSTER="$(date +%s)-$$"
 readonly INSTALL_ROOT="${CLAUDE_ACCOUNTS_INSTALL_ROOT:-$HOME/.local/share/claude-code-account-switcher}"

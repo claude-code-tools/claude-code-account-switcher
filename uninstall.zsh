@@ -56,6 +56,11 @@ fi
 [[ -n "$BIN_DIR" ]] && rm -f "$BIN_DIR/claude-accounts"
 rm -rf "$INSTALL_ROOT"
 
+# Per-account CLAUDE_CONFIG_DIRs hold only symlinks into ~/.claude plus a
+# regenerated .claude.json, so they are safe to drop (rm removes the links, not
+# their shared targets). They are rebuilt on next launch.
+rm -rf "$CONFIG_ROOT/configs"
+
 if $purge; then
   if ! $assume_yes; then
     read "answer?Delete all account metadata and Keychain tokens? [y/N] "

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0 - 2026-06-28
+
+- Fix the core bug where every subscription billed the account from `oauth/login`
+  regardless of the injected token. Claude Code pins the account/organization
+  cached in `~/.claude.json`'s `oauthAccount` to every session, so injecting
+  `CLAUDE_CODE_OAUTH_TOKEN` alone still resolved to the logged-in plan. Each
+  `claude-<suffix>` now launches with its own `CLAUDE_CONFIG_DIR` that strips
+  only `oauthAccount` and symlinks everything else, so the right plan is billed
+  while settings, plugins, memory, and history stay shared. Requires `jq` or
+  `python3`; without either, the session launches unisolated with a warning.
+- Show the pinned account name on the status line for the whole session, so an
+  in-session `/login` can't silently mislead which subscription is active.
+- Keep the test suite hermetic against leaked `CLAUDE_ACCOUNTS_*` environment
+  variables so a developer's shell can't make the installer test escape its
+  sandbox.
+
 ## 0.2.4 - 2026-06-28
 
 - Remove the optional per-email `claude auth login` step from token generation.

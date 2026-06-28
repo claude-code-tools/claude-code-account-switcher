@@ -1,11 +1,14 @@
 # Claude Code subscription selector.
 # Tokens live in macOS Keychain; account metadata lives in accounts.tsv.
-# Claude settings and session history remain shared in ~/.claude.
+# Each subscription launches with its own CLAUDE_CONFIG_DIR that shares all of
+# ~/.claude except the cached account identity, so sessions bill the right plan
+# while settings, plugins, memory, and history stay shared.
 
 typeset -g CLAUDE_SUBSCRIPTIONS_DIR="${CLAUDE_SUBSCRIPTIONS_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-subscriptions}"
 typeset -g CLAUDE_SUBSCRIPTIONS_FILE="${CLAUDE_SUBSCRIPTIONS_FILE:-$CLAUDE_SUBSCRIPTIONS_DIR/accounts.tsv}"
 typeset -g CLAUDE_SUBSCRIPTIONS_USAGE_DIR="${CLAUDE_SUBSCRIPTIONS_USAGE_DIR:-$CLAUDE_SUBSCRIPTIONS_DIR/usage}"
 typeset -g CLAUDE_SUBSCRIPTIONS_USAGE_SETTINGS="${CLAUDE_SUBSCRIPTIONS_USAGE_SETTINGS:-$CLAUDE_SUBSCRIPTIONS_DIR/usage-settings.json}"
+typeset -g CLAUDE_SUBSCRIPTIONS_CONFIG_DIR="${CLAUDE_SUBSCRIPTIONS_CONFIG_DIR:-$CLAUDE_SUBSCRIPTIONS_DIR/configs}"
 typeset -g CLAUDE_ACCOUNTS_BIN_DIR="${CLAUDE_ACCOUNTS_BIN_DIR:-}"
 
 if (( ${+_CLAUDE_SUBSCRIPTION_GENERATED_COMMANDS} )); then
@@ -219,6 +222,85 @@ _claude_subscription_pick() {
   done
 }
 
+# Build (or refresh) a per-account CLAUDE_CONFIG_DIR for a slug and return its
+# path in REPLY. Claude Code pins the account/org cached in .claude.json's
+# oauthAccount to every session, so an injected token alone still bills the
+# logged-in account. We give each subscription its own config dir that strips
+# only oauthAccount and symlinks everything else, so the right plan is billed
+# while settings/plugins/memory/history stay shared. Returns non-zero (and
+# REPLY unset) when isolation cannot be prepared, so the caller can fall back.
+_claude_subscription_config_dir() {
+  local slug="$1"
+  local base_dir base_json acct_dir entry base tmp
+  local strip=""
+
+  if (( ${+commands[jq]} )); then
+    strip="jq"
+  elif (( ${+commands[python3]} )); then
+    strip="python3"
+  else
+    print -u2 -r -- "claude-${slug}: install jq (brew install jq) to bill the correct subscription; launching without account isolation."
+    return 1
+  fi
+
+  base_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+  if [[ -n "${CLAUDE_CONFIG_DIR:-}" ]]; then
+    base_json="$CLAUDE_CONFIG_DIR/.claude.json"
+  else
+    base_json="$HOME/.claude.json"
+  fi
+  acct_dir="$CLAUDE_SUBSCRIPTIONS_CONFIG_DIR/$slug"
+
+  [[ -r "$base_json" ]] || {
+    print -u2 -r -- "claude-${slug}: no base Claude config found; launching without account isolation."
+    return 1
+  }
+
+  mkdir -p "$acct_dir" 2>/dev/null || return 1
+  chmod 700 "$acct_dir" 2>/dev/null
+
+  # Share by default: mirror every base entry as a symlink. Skip the account
+  # file (regenerated below) and per-process runtime that must stay isolated.
+  {
+    setopt local_options nullglob dotglob
+    for entry in "$base_dir"/*; do
+      base="${entry:t}"
+      case "$base" in
+        .claude.json|daemon|daemon.*|*.lock|*.sock) continue ;;
+      esac
+      ln -snf "$entry" "$acct_dir/$base"
+    done
+    # Drop our stale symlinks whose shared target disappeared.
+    for entry in "$acct_dir"/*(@N); do
+      [[ -e "$entry" ]] || rm -f "$entry"
+    done
+  }
+
+  # Override only the account identity.
+  tmp="$acct_dir/.claude.json.tmp.$$"
+  if [[ "$strip" == "jq" ]]; then
+    jq 'del(.oauthAccount)' "$base_json" > "$tmp" 2>/dev/null
+  else
+    python3 - "$base_json" "$tmp" <<'PY' 2>/dev/null
+import json, sys
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+data.pop("oauthAccount", None)
+with open(sys.argv[2], "w") as f:
+    json.dump(data, f)
+PY
+  fi
+  if [[ ! -s "$tmp" ]]; then
+    rm -f "$tmp"
+    print -u2 -r -- "claude-${slug}: could not prepare isolated config; launching without account isolation."
+    return 1
+  fi
+  chmod 600 "$tmp" 2>/dev/null
+  mv "$tmp" "$acct_dir/.claude.json"
+
+  REPLY="$acct_dir"
+}
+
 _claude_with_subscription() {
   local label="$1"
   local service="$2"
@@ -228,6 +310,7 @@ _claude_with_subscription() {
   local token claude_bin exit_code
   local -a usage_settings_args=()
   local -a session_name_args=()
+  local -a config_dir_args=()
   claude_bin="${commands[claude]:-$HOME/.local/bin/claude}"
   [[ -r "$CLAUDE_SUBSCRIPTIONS_USAGE_SETTINGS" ]] && usage_settings_args=(--settings "$CLAUDE_SUBSCRIPTIONS_USAGE_SETTINGS")
   if ! _claude_subscription_has_explicit_session_name "$@"; then
@@ -243,6 +326,10 @@ _claude_with_subscription() {
       return 1
     }
 
+  if _claude_subscription_config_dir "$slug"; then
+    config_dir_args=(CLAUDE_CONFIG_DIR="$REPLY")
+  fi
+
   print -u2 -r -- "Starting Claude with subscription: ${label}"
 
   /usr/bin/env \
@@ -253,8 +340,10 @@ _claude_with_subscription() {
     -u CLAUDE_CODE_USE_VERTEX \
     -u CLAUDE_CODE_USE_FOUNDRY \
     CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 \
+    "${config_dir_args[@]}" \
     CLAUDE_CODE_OAUTH_TOKEN="$token" \
     CLAUDE_SUBSCRIPTION_SLUG="$slug" \
+    CLAUDE_SUBSCRIPTION_LABEL="$label" \
     "$claude_bin" "${usage_settings_args[@]}" "${session_name_args[@]}" "$@"
   exit_code=$?
 

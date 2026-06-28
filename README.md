@@ -8,9 +8,11 @@ The switcher stores one long-lived OAuth token per account in macOS Keychain and
 
 ## Why this exists
 
-Claude Code stores `/login` credentials in a shared macOS Keychain entry. Logging into another subscription therefore changes the account used by other CLI sessions. Claude Code does support one-year OAuth tokens through `claude setup-token`, but it prints them without saving them.
+Running two Claude subscriptions on one machine is harder than it looks. Claude Code stores `/login` credentials in a shared macOS Keychain entry, so logging into another subscription changes the account used by every other CLI session. `claude setup-token` mints a one-year OAuth token per account, but prints it without saving it.
 
-This project stores those tokens under separate Keychain service names and injects only the selected token into each Claude Code process.
+The subtle part: injecting `CLAUDE_CODE_OAUTH_TOKEN` alone is **not enough**. Claude Code caches the signed-in account and organization in `~/.claude.json` (`oauthAccount`) and pins that organization to every request — so a session launched with account B's token still bills account A (a `403 "missing scope or org access"` followed by a silent fallback to the logged-in account). Most multi-account setups dodge this by giving each account a fully separate `CLAUDE_CONFIG_DIR`, which works but silos your settings, MCP servers, memory, and session history per account.
+
+This project does both halves: it stores each token under its own Keychain service name and injects only the selected one, **and** it gives each account a `CLAUDE_CONFIG_DIR` that strips only the cached `oauthAccount` while symlinking everything else back from `~/.claude`. The result is one shared configuration with the account — and its billing — correctly isolated per command.
 
 ## Requirements
 
@@ -18,8 +20,9 @@ This project stores those tokens under separate Keychain service names and injec
 - Zsh
 - [Claude Code](https://code.claude.com/docs/en/setup)
 - `curl`
+- [`jq`](https://jqlang.org/) (or `python3`) — needed so each subscription bills
+  the right plan; also powers cached 5-hour and 7-day usage display
 - Optional: [`fzf`](https://github.com/junegunn/fzf) for the full-screen selector
-- Optional: [`jq`](https://jqlang.org/) for cached 5-hour and 7-day usage display
 
 Install optional dependencies with Homebrew:
 
@@ -32,13 +35,13 @@ brew install fzf jq
 Review the installer before running it:
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.4/install.zsh
+curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.3.0/install.zsh
 ```
 
 Then install:
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.4/install.zsh | zsh
+curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.3.0/install.zsh | zsh
 ```
 
 The installer:
@@ -136,7 +139,7 @@ New accounts show `usage pending` until their first normal Claude response. Cach
 Run the installer again. Account metadata and Keychain entries are preserved.
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.2.4/install.zsh | zsh
+curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v0.3.0/install.zsh | zsh
 ```
 
 ## Uninstall

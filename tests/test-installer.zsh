@@ -7,6 +7,11 @@ readonly PROJECT_ROOT="${0:A:h:h}"
 readonly TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/claude-accounts-install-test.XXXXXX")"
 trap 'rm -rf "$TEST_ROOT"' EXIT INT TERM
 
+# Keep the installer sandboxed even if these leak in from the caller's shell;
+# otherwise a stray CLAUDE_ACCOUNTS_BIN_DIR makes install.zsh write outside the
+# test's temporary HOME and clobber the real launcher.
+unset CLAUDE_ACCOUNTS_BIN_DIR CLAUDE_ACCOUNTS_STANDALONE CLAUDE_ACCOUNTS_VERSION CLAUDE_ACCOUNTS_RUNTIME
+
 fail() {
   print -u2 -r -- "test failure: $*"
   exit 1
