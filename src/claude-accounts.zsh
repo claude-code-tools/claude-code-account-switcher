@@ -234,12 +234,17 @@ _claude_subscription_config_dir() {
   local base_dir base_json acct_dir entry base tmp
   local strip=""
 
+  # Prefer jq (clean output); fall back to plutil (ships with macOS, but
+  # re-serializes floats verbosely) then python3. The copy is only read by
+  # Claude, so plutil's float formatting is harmless.
   if (( ${+commands[jq]} )); then
     strip="jq"
+  elif (( ${+commands[plutil]} )); then
+    strip="plutil"
   elif (( ${+commands[python3]} )); then
     strip="python3"
   else
-    print -u2 -r -- "claude-${slug}: install jq (brew install jq) to bill the correct subscription; launching without account isolation."
+    print -u2 -r -- "claude-${slug}: need jq, plutil, or python3 to isolate the account; launching without isolation."
     return 1
   fi
 
@@ -278,10 +283,18 @@ _claude_subscription_config_dir() {
 
   # Override only the account identity.
   tmp="$acct_dir/.claude.json.tmp.$$"
-  if [[ "$strip" == "jq" ]]; then
-    jq 'del(.oauthAccount)' "$base_json" > "$tmp" 2>/dev/null
-  else
-    python3 - "$base_json" "$tmp" <<'PY' 2>/dev/null
+  case "$strip" in
+    jq)
+      jq 'del(.oauthAccount)' "$base_json" > "$tmp" 2>/dev/null
+      ;;
+    plutil)
+      if cp "$base_json" "$tmp" 2>/dev/null; then
+        plutil -remove oauthAccount "$tmp" 2>/dev/null || true   # ok if key absent
+        plutil -convert json "$tmp" 2>/dev/null || true          # force JSON output
+      fi
+      ;;
+    python3)
+      python3 - "$base_json" "$tmp" <<'PY' 2>/dev/null
 import json, sys
 with open(sys.argv[1]) as f:
     data = json.load(f)
@@ -289,7 +302,8 @@ data.pop("oauthAccount", None)
 with open(sys.argv[2], "w") as f:
     json.dump(data, f)
 PY
-  fi
+      ;;
+  esac
   if [[ ! -s "$tmp" ]]; then
     rm -f "$tmp"
     print -u2 -r -- "claude-${slug}: could not prepare isolated config; launching without account isolation."

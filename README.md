@@ -20,8 +20,9 @@ This project does both halves: it stores each token under its own Keychain servi
 - Zsh
 - [Claude Code](https://code.claude.com/docs/en/setup)
 - `curl`
-- [`jq`](https://jqlang.org/) (or `python3`) — needed so each subscription bills
-  the right plan; also powers cached 5-hour and 7-day usage display
+- Optional: [`jq`](https://jqlang.org/) for cached 5-hour / 7-day usage display
+  and clean per-account config output (account isolation falls back to the
+  built-in `plutil` when `jq` is absent, so it works out of the box)
 - Optional: [`fzf`](https://github.com/junegunn/fzf) for the full-screen selector
 
 Install optional dependencies with Homebrew:

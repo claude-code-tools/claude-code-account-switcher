@@ -8,8 +8,9 @@
   `CLAUDE_CODE_OAUTH_TOKEN` alone still resolved to the logged-in plan. Each
   `claude-<suffix>` now launches with its own `CLAUDE_CONFIG_DIR` that strips
   only `oauthAccount` and symlinks everything else, so the right plan is billed
-  while settings, plugins, memory, and history stay shared. Requires `jq` or
-  `python3`; without either, the session launches unisolated with a warning.
+  while settings, plugins, memory, and history stay shared. Uses `jq` when
+  present, otherwise the built-in macOS `plutil` (or `python3`), so isolation
+  works with no extra dependency.
 - Show the pinned account name on the status line for the whole session, so an
   in-session `/login` can't silently mislead which subscription is active.
 - Add `claude-accounts doctor`: checks each account's Keychain token and config
