@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.0 - 2026-06-29
+
+- Rewrite the tool as a single cross-platform Go binary that runs on macOS,
+  Linux, and Windows, replacing the macOS-only Zsh implementation. Tokens use
+  the macOS Keychain as before, or a `0600` `tokens.json` on Linux and Windows;
+  account isolation (`oauthAccount` stripping) and usage parsing are now native,
+  so `jq`/`plutil`/`python3` are no longer required.
+- Keep the unified `claude-accounts` manager (add / launch / edit / refresh /
+  remove / doctor) and the per-account `claude-<suffix>` launchers, now created
+  as symlinks to the binary.
+- Show the active account in the session status line by default and make session
+  naming opt-in via `CLAUDE_SUBSCRIPTION_NAME_SESSIONS`, so `claude --resume`
+  keeps Claude's auto-generated descriptions instead of the account name.
+- Distribute prebuilt binaries via GitHub Releases with a `curl | sh`
+  installer (`install.sh`); `go install` works as an alternative.
+- The legacy Zsh version remains available at `v0.3.0` but is no longer the
+  recommended install.
+
 ## 0.3.0 - 2026-06-28
 
 - Fix the core bug where every subscription billed the account from `oauth/login`
