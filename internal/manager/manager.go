@@ -43,7 +43,13 @@ func Run() error {
 		}
 
 		acct := accounts[idx-1]
-		actions := []string{"Launch", "Edit", "Refresh token", "Remove", "Back"}
+		actions := []string{
+			fmt.Sprintf("%-14s %s", "Launch", "Start Claude with this subscription"),
+			fmt.Sprintf("%-14s %s", "Edit", "Change the display name or command suffix"),
+			fmt.Sprintf("%-14s %s", "Refresh token", "Generate and store a replacement token"),
+			fmt.Sprintf("%-14s %s", "Remove", "Delete this subscription and its Keychain token"),
+			fmt.Sprintf("%-14s %s", "Back", "Return to the account list"),
+		}
 		aidx, ok := menu.Select(acct.Label+" > ", "Choose an action", actions)
 		if !ok {
 			continue

@@ -4,6 +4,7 @@
 package launcher
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -52,7 +53,7 @@ func Launch(acct registry.Account, args []string) error {
 
 	bin := claudePath()
 	argv := []string{bin}
-	if s := paths.UsageSettings(); readable(s) {
+	if s, err := statusSettings(); err == nil {
 		argv = append(argv, "--settings", s)
 	}
 	// Naming the session surfaces the account in the resume picker and terminal
@@ -108,13 +109,39 @@ func claudePath() string {
 	return filepath.Join(home, ".local", "bin", "claude")
 }
 
-func readable(p string) bool {
-	f, err := os.Open(p)
+// statusSettings writes (and returns the path of) a Claude --settings file whose
+// status line runs this binary's `statusline` subcommand, so the account name
+// shows in-session with no zsh dependency.
+func statusSettings() (string, error) {
+	exe, err := os.Executable()
 	if err != nil {
-		return false
+		return "", err
 	}
-	_ = f.Close()
-	return true
+	if resolved, e := filepath.EvalSymlinks(exe); e == nil {
+		exe = resolved
+	}
+	body, err := json.Marshal(map[string]any{
+		"statusLine": map[string]any{
+			"type":    "command",
+			"command": shellQuote(exe) + " statusline",
+			"padding": 0,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(paths.ConfigRoot(), 0o700); err != nil {
+		return "", err
+	}
+	path := filepath.Join(paths.ConfigRoot(), "go-statusline.json")
+	if err := os.WriteFile(path, body, 0o600); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // hasExplicitName matches the zsh detector: a --name/--name=/-n/-nVALUE before

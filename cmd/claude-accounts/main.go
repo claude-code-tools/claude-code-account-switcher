@@ -14,6 +14,7 @@ import (
 	"github.com/leegunwoo98/claude-code-account-switcher/internal/manage"
 	"github.com/leegunwoo98/claude-code-account-switcher/internal/manager"
 	"github.com/leegunwoo98/claude-code-account-switcher/internal/registry"
+	"github.com/leegunwoo98/claude-code-account-switcher/internal/statusline"
 	"github.com/leegunwoo98/claude-code-account-switcher/internal/usage"
 )
 
@@ -29,6 +30,8 @@ func main() {
 
 	if len(args) > 0 {
 		switch args[0] {
+		case "statusline":
+			statusline.Run() // invoked by Claude Code as the status-line command
 		case "doctor":
 			if err := doctor.Run(); err != nil {
 				fail(err)
