@@ -11,6 +11,7 @@ import (
 
 	"github.com/leegunwoo98/claude-code-account-switcher/internal/doctor"
 	"github.com/leegunwoo98/claude-code-account-switcher/internal/launcher"
+	"github.com/leegunwoo98/claude-code-account-switcher/internal/manage"
 	"github.com/leegunwoo98/claude-code-account-switcher/internal/registry"
 	"github.com/leegunwoo98/claude-code-account-switcher/internal/usage"
 )
@@ -38,6 +39,24 @@ func main() {
 				fail(fmt.Errorf("usage: claude-accounts launch <slug> [claude args...]"))
 			}
 			launch(args[1], args[2:])
+		case "add":
+			if err := manage.Add(); err != nil {
+				fail(err)
+			}
+		case "refresh":
+			if len(args) < 2 {
+				fail(fmt.Errorf("usage: claude-accounts refresh <slug>"))
+			}
+			if err := manage.Refresh(args[1]); err != nil {
+				fail(err)
+			}
+		case "remove", "rm":
+			if len(args) < 2 {
+				fail(fmt.Errorf("usage: claude-accounts remove <slug>"))
+			}
+			if err := manage.Remove(args[1]); err != nil {
+				fail(err)
+			}
 		case "-h", "--help", "help":
 			printHelp()
 		default:
@@ -79,6 +98,9 @@ func printHelp() {
 
   (no command)    list configured subscriptions
   list            list configured subscriptions
+  add             register a new subscription (runs claude setup-token)
+  refresh <slug>  replace a subscription's token
+  remove <slug>   delete a subscription and its token
   launch <slug>   launch Claude as that subscription
   doctor          check tokens, isolation, and same-account collisions
 

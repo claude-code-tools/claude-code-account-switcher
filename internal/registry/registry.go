@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/leegunwoo98/claude-code-account-switcher/internal/paths"
@@ -70,6 +71,40 @@ func Find(slug string) (Account, bool) {
 // ServiceFor is the Keychain service name used for a slug's token.
 func ServiceFor(slug string) string {
 	return fmt.Sprintf("Claude Code Subscription: claude-%s", slug)
+}
+
+// Append adds an account row to the registry, creating the file if needed.
+func Append(a Account) error {
+	if err := os.MkdirAll(filepath.Dir(paths.AccountsFile()), 0o700); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(paths.AccountsFile(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = fmt.Fprintf(f, "%s\t%s\t%s\n", a.Slug, a.Label, a.Service)
+	return err
+}
+
+// Remove rewrites the registry without the given slug.
+func Remove(slug string) error {
+	accounts, err := Load()
+	if err != nil {
+		return err
+	}
+	var b strings.Builder
+	for _, a := range accounts {
+		if a.Slug == slug {
+			continue
+		}
+		fmt.Fprintf(&b, "%s\t%s\t%s\n", a.Slug, a.Label, a.Service)
+	}
+	tmp := paths.AccountsFile() + ".tmp"
+	if err := os.WriteFile(tmp, []byte(b.String()), 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, paths.AccountsFile())
 }
 
 // ValidSlug matches the zsh validator: lowercase [a-z0-9-], no leading/trailing

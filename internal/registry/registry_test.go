@@ -6,6 +6,29 @@ import (
 	"testing"
 )
 
+func TestAppendAndRemove(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_SUBSCRIPTIONS_FILE", filepath.Join(dir, "accounts.tsv"))
+
+	if err := Append(Account{Slug: "work", Label: "Work", Service: "svc-work"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := Append(Account{Slug: "home", Label: "Home", Service: "svc-home"}); err != nil {
+		t.Fatal(err)
+	}
+	if accounts, _ := Load(); len(accounts) != 2 {
+		t.Fatalf("after append got %d accounts, want 2", len(accounts))
+	}
+
+	if err := Remove("work"); err != nil {
+		t.Fatal(err)
+	}
+	accounts, _ := Load()
+	if len(accounts) != 1 || accounts[0].Slug != "home" {
+		t.Fatalf("after remove: %+v", accounts)
+	}
+}
+
 func TestLoadSkipsInvalidAndDuplicate(t *testing.T) {
 	dir := t.TempDir()
 	tsv := filepath.Join(dir, "accounts.tsv")
