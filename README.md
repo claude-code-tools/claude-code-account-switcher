@@ -30,20 +30,20 @@ Account isolation and usage parsing are built in — no `jq`, `python3`, or othe
 Review the installer before running it:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v1.0.0/install.sh
+curl -fsSL https://raw.githubusercontent.com/claude-code-tools/claude-code-account-switcher/v1.0.0/install.sh
 ```
 
 Then install:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v1.0.0/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/claude-code-tools/claude-code-account-switcher/v1.0.0/install.sh | sh
 ```
 
 The installer downloads the prebuilt `claude-accounts` binary for your OS and architecture, installs it into a writable directory already on your `PATH` (defaulting to `~/.local/bin`), and does **not** modify `.zshrc`, `.bashrc`, or any other shell startup file. Set `CLAUDE_ACCOUNTS_BIN_DIR` to choose the install directory.
 
 ### Windows
 
-Download `claude-accounts_v1.0.0_windows_amd64.zip` (or `_arm64`) from the [latest release](https://github.com/leegunwoo98/claude-code-account-switcher/releases), extract `claude-accounts.exe`, and place it in a directory on your `PATH`.
+Download `claude-accounts_v1.0.0_windows_amd64.zip` (or `_arm64`) from the [latest release](https://github.com/claude-code-tools/claude-code-account-switcher/releases), extract `claude-accounts.exe`, and place it in a directory on your `PATH`.
 
 ### From source (any platform)
 
@@ -136,7 +136,7 @@ claude-accounts doctor
 Re-run the installer (macOS/Linux), download the newer release (Windows), or `go install ...@latest`. Account metadata and stored tokens are preserved.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v1.0.0/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/claude-code-tools/claude-code-account-switcher/v1.0.0/install.sh | sh
 ```
 
 ## Uninstall

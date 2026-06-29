@@ -2,7 +2,7 @@
 # Install the claude-accounts cross-platform binary from GitHub Releases.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/leegunwoo98/claude-code-account-switcher/v1.0.0/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/claude-code-tools/claude-code-account-switcher/v1.0.0/install.sh | sh
 #
 # Honors:
 #   CLAUDE_ACCOUNTS_VERSION   release tag to install        (default below)
@@ -14,7 +14,7 @@
 
 set -eu
 
-REPO="leegunwoo98/claude-code-account-switcher"
+REPO="claude-code-tools/claude-code-account-switcher"
 DEFAULT_VERSION="v1.0.0"
 VERSION="${CLAUDE_ACCOUNTS_VERSION:-$DEFAULT_VERSION}"
 

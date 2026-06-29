@@ -3,7 +3,7 @@
 emulate -L zsh
 set -euo pipefail
 
-readonly REPOSITORY="leegunwoo98/claude-code-account-switcher"
+readonly REPOSITORY="claude-code-tools/claude-code-account-switcher"
 readonly DEFAULT_VERSION="v0.3.0"
 readonly VERSION="${CLAUDE_ACCOUNTS_VERSION:-$DEFAULT_VERSION}"
 readonly CACHE_BUSTER="$(date +%s)-$$"
