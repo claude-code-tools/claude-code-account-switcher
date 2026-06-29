@@ -13,6 +13,10 @@
   works with no extra dependency.
 - Show the pinned account name on the status line for the whole session, so an
   in-session `/login` can't silently mislead which subscription is active.
+- Stop naming sessions after the account by default, so Claude's resume picker
+  shows its descriptive session titles instead of `claude-<slug>`. The status
+  line already surfaces the account; set `CLAUDE_SUBSCRIPTION_NAME_SESSIONS=1` to
+  restore session naming in the header, terminal title, and resume picker.
 - Add `claude-accounts doctor`: checks each account's Keychain token and config
   isolation, and flags when two accounts resolve to the same subscription
   (identical token or identical usage fingerprint) — the symptom of a token

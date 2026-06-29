@@ -327,7 +327,12 @@ _claude_with_subscription() {
   local -a config_dir_args=()
   claude_bin="${commands[claude]:-$HOME/.local/bin/claude}"
   [[ -r "$CLAUDE_SUBSCRIPTIONS_USAGE_SETTINGS" ]] && usage_settings_args=(--settings "$CLAUDE_SUBSCRIPTIONS_USAGE_SETTINGS")
-  if ! _claude_subscription_has_explicit_session_name "$@"; then
+  # Naming the session surfaces the account in the resume picker and terminal
+  # title, but it replaces Claude's auto-generated description there. The status
+  # line already shows the active account in-session, so leave sessions
+  # auto-named unless the user opts in.
+  if [[ -n "${CLAUDE_SUBSCRIPTION_NAME_SESSIONS:-}" ]] && \
+    ! _claude_subscription_has_explicit_session_name "$@"; then
     session_name_args=(--name "$label")
   fi
 
